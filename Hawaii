@@ -1,1 +1,38 @@
+import pandas as pd
+from fbprophet import Prophet
+
+# Load the dataset
+data = pd.read_csv('hawaii.csv')
+
+# Convert 'Report Date' to datetime and filter for Hawaii data from 2013 to 2023
+data['Report Date'] = pd.to_datetime(data['Report Date'])
+hawaii_data = data[(data['State Abbreviation'] == 'HI') & 
+                   (data['Report Date'].dt.year >= 2013) & 
+                   (data['Report Date'].dt.year <= 2023)]
+
+# Prepare data for Prophet
+hawaii_data_filtered = hawaii_data[['Report Date', 'Total Medicaid and CHIP Enrollment']].dropna()
+hawaii_data_filtered.rename(columns={'Report Date': 'ds', 'Total Medicaid and CHIP Enrollment': 'y'}, inplace=True)
+
+# Initialize and fit the Prophet model
+model = Prophet()
+model.fit(hawaii_data_filtered)
+
+# Create a dataframe for future predictions (monthly data for 10 years)
+future = model.make_future_dataframe(periods=12, freq='M')
+
+# Predict future expenditures
+forecast = model.predict(future)
+
+# Plot the forecast
+model.plot(forecast)
+model.plot_components(forecast)
+
+# Show forecast data
+print(forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail())
+
+# Plot the forecast
+model.plot(forecast)
+
+
 
