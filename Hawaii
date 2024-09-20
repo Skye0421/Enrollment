@@ -1,38 +1,45 @@
 import pandas as pd
-from fbprophet import Prophet
+import matplotlib.pyplot as plt
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
+from statsmodels.tools.sm_exceptions import ConvergenceWarning 
+import warnings
+
+warnings.filterwarnings("ignore", category=FutureWarning) 
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 # Load the dataset
 data = pd.read_csv('hawaii.csv')
 
 # Convert 'Report Date' to datetime and filter for Hawaii data from 2013 to 2023
 data['Report Date'] = pd.to_datetime(data['Report Date'])
-hawaii_data = data[(data['State Abbreviation'] == 'HI') & 
-                   (data['Report Date'].dt.year >= 2013) & 
-                   (data['Report Date'].dt.year <= 2023)]
 
-# Prepare data for Prophet
-hawaii_data_filtered = hawaii_data[['Report Date', 'Total Medicaid and CHIP Enrollment']].dropna()
-hawaii_data_filtered.rename(columns={'Report Date': 'ds', 'Total Medicaid and CHIP Enrollment': 'y'}, inplace=True)
+# Data clean
+hawaii_data = data[data['State Name'] == 'Hawaii'].copy()
 
-# Initialize and fit the Prophet model
-model = Prophet()
-model.fit(hawaii_data_filtered)
+hawaii_trends = hawaii_data.groupby('Report Date')['Total Applications for F]
 
-# Create a dataframe for future predictions (monthly data for 10 years)
-future = model.make_future_dataframe(periods=12, freq='M')
+plt.figure(figsize=(14, 7)) hawaii_trends = hawaii_trends.dropna()
 
-# Predict future expenditures
-forecast = model.predict(future)
+hawaii_trends = hawaii_trends.resample('M').sum()
 
-# Plot the forecast
-model.plot(forecast)
-model.plot_components(forecast)
+if len(hawaii_trends) >= 2:
+try:
+  model = ExponentialSmoothing(
+  hawaii_trends,
+  trend="add",
+  seasonal=None, initialization_method="estimated", use_boxcox=False
+  )
+  fit = model.fit(optimized=True)
+  forecast = fit.forecast(12)
 
-# Show forecast data
-print(forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail())
+plt.plot(hawaii_trends.index, hawaii_trends, label='Hawaii Actual') plt.plot(forecast.index, forecast, label='Hawaii Forecast', linestyl
+except Exception as e:
+print(f"Error processing Hawaii: {e}")
+plt.title('Total Medicaid and CHIP Applications Over Time in Hawaii with For plt.xlabel('Report Date')
+plt.ylabel('Total Applications')
+plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+plt.show()
 
-# Plot the forecast
-model.plot(forecast)
 
 
 
